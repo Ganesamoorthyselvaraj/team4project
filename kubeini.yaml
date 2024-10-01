@@ -1,0 +1,47 @@
+---
+- name: Initialize Kubernetes nodes
+  hosts: master  # Run only on the master node
+  become: true  # Run as root
+  tasks:
+    # Create the kube directory to store configuration files
+    - name: Create kube directory
+      file:
+        path: /root/kube
+        state: directory
+        mode: '0755'
+    # Create the Kubernetes configuration file needed for initializing the master node
+    - name: Create Kubernetes configuration file
+      template:
+        src: /root/ansible/templates/config.yaml.j2
+        dest: /root/kube/config.yaml
+    # Initialize the Kubernetes master node using kubeadm and the configuration file
+    - name: Initialize Kubernetes master with kubeadm
+      shell: kubeadm init --config=/root/kube/config.yaml >> /root/kube/cluster_initialized
+      register: master_init
+      changed_when: "'Your Kubernetes control-plane has initialized successfully' in master_init.stdout"
+    # Create the .kube directory to store Kubernetes configurations for the root user
+    - name: Create .kube directory
+      file:
+        path: /root/.kube
+        state: directory
+        mode: '0755'
+    # Copy the admin.conf file to the .kube directory for kubectl to interact with the cluster
+    - name: Copy Kubernetes admin configuration
+      command: cp /etc/kubernetes/admin.conf /root/.kube/config
+    # Set proper ownership for the Kubernetes admin config file
+    - name: Change ownership of Kubernetes admin config
+      file:
+        path: /root/.kube/config
+        owner: root
+        group: root
+        mode: '0644'
+    # Generate the kubeadm join command for worker nodes to join the cluster
+    - name: Get join command for worker nodes
+      shell: kubeadm token create --print-join-command
+      register: join_command
+    # Save the join command to a script for use on the worker nodes
+    - name: Store join command for worker nodes
+      copy:
+        content: "{{ join_command.stdout }}"
+        dest: /root/kube/join_command
+        mode: '0755'
