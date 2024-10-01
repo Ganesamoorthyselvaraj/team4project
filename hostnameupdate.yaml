@@ -1,0 +1,31 @@
+---
+- name: Set Hostnames for Kubernetes Nodes
+  hosts: master
+  become: yes
+  tasks:
+    - name: Set hostname for master node
+      hostname:
+        name: kube-master
+- name: Set Hostnames for Worker Nodes Dynamically
+  hosts: workers
+  become: yes
+  tasks:
+    - name: Set hostname dynamically for worker nodes
+      hostname:
+        name: "worker-{{ play_hosts.index(inventory_hostname) + 1 }}"
+    - name: Add worker node hostnames to /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        line: "{{ ansible_host }} worker-{{ play_hosts.index(inventory_hostname) + 1 }}"
+        state: present
+- name: Disable Swap on Kubernetes Nodes
+  hosts: all
+  become: yes
+  tasks:
+    - name: Turn off all swap
+      command: swapoff -a
+    - name: Comment out swap entries in fstab
+      lineinfile:
+        path: /etc/fstab
+        regexp: '^.*swap.*'
+        state: absent
