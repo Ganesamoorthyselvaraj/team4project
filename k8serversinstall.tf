@@ -75,7 +75,7 @@ resource "null_resource" "generate_inventory" {
       MASTER_IP  = aws_instance.k8s_master.private_ip
       WORKER_IPS = join(",", aws_instance.k8s_worker[*].private_ip)
     }
-    command = "python3 /root/ansible/create_inventory.py"
+    command = "python3 create_inventory.py"
   }
   # Ensure it runs after the instances are created
   depends_on = [aws_instance.k8s_master, aws_instance.k8s_worker]
