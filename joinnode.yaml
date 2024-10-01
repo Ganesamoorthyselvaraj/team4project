@@ -1,0 +1,74 @@
+---
+- name: Fetch and generate join configuration for worker nodes
+  hosts: master
+  become: yes
+  tasks:
+    # Fetch kubeadm join command from the master
+    - name: Fetch the kubeadm join command
+      command: kubeadm token create --print-join-command
+      register: join_command_output
+    # Debug the output to verify the join command
+    - name: Display the kubeadm join command output
+      debug:
+        msg: "{{ join_command_output.stdout }}"
+    # Extract token, API server endpoint, and CA cert hash using regex
+    - name: Extract token, API server endpoint, and CA cert hash
+      set_fact:
+        bootstrap_token: "{{ join_command_output.stdout | regex_search('--token\\s+([\\w\\.]+)', '\\1') | first }}"
+        api_server_endpoint: "{{ join_command_output.stdout | regex_search('kubeadm join\\s+([\\d\\.]+:[0-9]+)', '\\1') | first }}"
+        ca_cert_hash: "sha256:{{ join_command_output.stdout | regex_search('--discovery-token-ca-cert-hash\\s+sha256:([a-fA-F0-9]+)', '\\1') | first }}"
+    # Debug the extracted values to verify correctness
+    - name: Debug the extracted bootstrap token, API server endpoint, and CA cert hash
+      debug:
+        msg: "Token: {{ bootstrap_token }}, API Server: {{ api_server_endpoint }}, CA Cert Hash: {{ ca_cert_hash }}"
+    # Create the kubeadm JoinConfiguration file on the master node
+    - name: Create kubeadm configuration file for worker nodes on master
+      copy:
+        content: |
+          apiVersion: kubeadm.k8s.io/v1beta3
+          kind: JoinConfiguration
+          nodeRegistration:
+            criSocket: unix:///var/run/cri-dockerd.sock  # Adjust based on your container runtime
+          discovery:
+            bootstrapToken:
+              token: "{{ bootstrap_token }}"
+              apiServerEndpoint: "{{ api_server_endpoint }}"
+              caCertHashes:
+                - "{{ ca_cert_hash }}"
+        dest: /tmp/kubeadm-config.yaml
+    # Copy the JoinConfiguration file from the master to the Ansible controller
+    - name: Copy kubeadm configuration from master to Ansible controller
+      fetch:
+        src: /tmp/kubeadm-config.yaml
+        dest: /tmp/kubeadm-config.yaml
+        flat: yes
+- name: Distribute join configuration to worker nodes and execute join command
+  hosts: workers
+  become: yes
+  tasks:
+    # Ensure /opt/kube directory exists on worker nodes
+    - name: Ensure /opt/kube directory exists
+      file:
+        path: /opt/kube
+        state: directory
+        mode: '0755'
+    # Install socat on worker nodes
+    - name: Install socat on worker nodes
+      package:
+        name: socat
+        state: present
+    # Copy the JoinConfiguration file to the worker nodes
+    - name: Copy JoinConfiguration file to worker nodes
+      copy:
+        src: /tmp/kubeadm-config.yaml
+        dest: /opt/kube/kubeadm-config.yaml
+    # Run the kubeadm join command on the worker nodes using the config file
+    - name: Execute kubeadm join command on worker nodes
+      shell: kubeadm join --config /opt/kube/kubeadm-config.yaml
+      register: join_result
+      ignore_errors: yes
+    # Check the result of kubeadm join command
+    - name: Check if kubeadm join was successful
+      fail:
+        msg: "Kubeadm join failed!"
+      when: join_result.rc != 0
