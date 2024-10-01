@@ -1,0 +1,53 @@
+---
+- name: Set Hostnames and Install Docker and Kubernetes
+  hosts: all  # This playbook runs on both master and worker nodes
+  become: true  # Ensures the tasks are run with root privileges
+  tasks:
+    # Update the apt package list to ensure the latest packages are fetched
+    - name: Update apt package list
+      apt:
+        update_cache: yes
+    # Install Docker to manage containers, which is essential for Kubernetes nodes
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present  # Ensures Docker is installed
+    # Add the Kubernetes GPG key, which is required for securely downloading Kubernetes packages
+    - name: Add Kubernetes GPG key
+      shell: |
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+      async: 60  # Maximum time in seconds to wait for this task to complete
+      poll: 0    # Do not wait for completion; move to the next task
+      ignore_errors: yes  # Continue if this task fails
+    # Add the Kubernetes repository to the sources list to allow the installation of Kubernetes tools
+    - name: Add Kubernetes apt repository
+      shell: |
+        echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
+      async: 60
+      poll: 0
+      ignore_errors: yes
+    # Update the package list again after adding the Kubernetes repository
+    - name: Update apt cache after adding Kubernetes repo
+      apt:
+        update_cache: yes
+    # Install kubelet, kubeadm, and kubectl
+    - name: Install kubelet, kubeadm, and kubectl
+      apt:
+        name:
+          - kubelet
+          - kubeadm
+          - kubectl
+        state: present  # Ensures all three tools are installed
+      async: 60
+      poll: 0
+      ignore_errors: yes
+    # Enable the bridge network calls, required for pod networking in Kubernetes
+    - name: Enable net.bridge.bridge-nf-call-iptables
+      sysctl:
+        name: net.bridge.bridge-nf-call-iptables
+        value: 1
+        sysctl_set: yes  # Apply the setting
+        state: present
+      async: 60
+      poll: 0
+      ignore_errors: yes
