@@ -12,7 +12,7 @@
     # Create the Kubernetes configuration file needed for initializing the master node
     - name: Create Kubernetes configuration file
       template:
-        src: /root/ansible/templates/config.yaml.j2
+        src: config.yaml.j2
         dest: /root/kube/config.yaml
     # Initialize the Kubernetes master node using kubeadm and the configuration file
     - name: Initialize Kubernetes master with kubeadm
