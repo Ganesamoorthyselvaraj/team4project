@@ -1,0 +1,56 @@
+---
+- name:  Install cri-dockerd
+  hosts:  all
+  become: true
+  tasks:
+    # Download and install cri-dockerd
+    - name: Download cri-dockerd
+      get_url:
+        url: https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.14/cri-dockerd-0.3.14.amd64.tgz
+        dest: /tmp/cri-dockerd-0.3.14.amd64.tgz
+    - name: Extract cri-dockerd
+      unarchive:
+        src: /tmp/cri-dockerd-0.3.14.amd64.tgz
+        dest: /tmp
+        remote_src: yes
+    - name: Install cri-dockerd binary
+      command: install -o root -g root -m 0755 /tmp/cri-dockerd/cri-dockerd /usr/local/bin/cri-dockerd
+    # Download and set up cri-dockerd systemd service
+    - name: Download cri-dockerd systemd service files
+      get_url:
+        url: https://github.com/Mirantis/cri-dockerd/archive/refs/tags/v0.3.14.tar.gz
+        dest: /tmp/cri-dockerd-v0.3.14.tar.gz
+    - name: Extract cri-dockerd systemd files
+      unarchive:
+        src: /tmp/cri-dockerd-v0.3.14.tar.gz
+        dest: /tmp
+        remote_src: yes
+    - name: Copy cri-dockerd systemd service files
+      copy:
+        src: /tmp/cri-dockerd-0.3.14/packaging/systemd/
+        dest: /etc/systemd/system/
+        remote_src: yes
+    - name: Update cri-docker.service path
+      replace:
+        path: /etc/systemd/system/cri-docker.service
+        regexp: '/usr/bin/cri-dockerd'
+        replace: '/usr/local/bin/cri-dockerd'
+    # Enable and start cri-docker service
+    - name: Reload systemd daemon
+      command: systemctl daemon-reload
+    - name: Enable and start cri-docker.socket
+      systemd:
+        name: cri-docker.socket
+        enabled: yes
+        state: started
+    - name: Enable and start cri-docker
+      systemd:
+        name: cri-docker
+        enabled: yes
+        state: started
+    - name: Check cri-docker service status
+      command: systemctl status cri-docker
+      register: cri_docker_status
+    - name: Display cri-docker service status
+      debug:
+        var: cri_docker_status.stdout_lines
