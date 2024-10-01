@@ -15,5 +15,5 @@ variable "ami_id" {
 variable "key_name" {
   description = "Name of the key pair to use for the EC2 instances"
   type        = string
-  default     = "project-key"  # Default key name
+  default     = "team4-key"  # Default key name
 }
