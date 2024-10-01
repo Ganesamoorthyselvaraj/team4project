@@ -72,8 +72,8 @@ output "k8s_worker_private_ips" {
 resource "null_resource" "generate_inventory" {
   provisioner "local-exec" {
     environment = {
-      MASTER_IP  = aws_instance.k8s_master.private_ip
-      WORKER_IPS = join(",", aws_instance.k8s_worker[*].private_ip)
+      MASTER_IP  = "$aws_instance.k8s_master.private_ip"
+      WORKER_IPS = "$join(",", aws_instance.k8s_worker[*].private_ip)"
     }
     command = "python3 /root/ansible/create_inventory.py"
   }
