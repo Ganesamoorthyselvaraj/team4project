@@ -1,25 +1,18 @@
-- hosts: master
+---
+- name: Install Argo CD on Kubernetes master
+  hosts: master
+  become: yes
+
   tasks:
-    - name: Create the ArgoCD namespace
-      kubernetes.core.k8s:
-        api_version: v1
-        kind: Namespace
-        name: argocd
-    - name: Apply ArgoCD manifests from the official repository
-      kubernetes.core.k8s:
-        state: present
-        src: https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-        namespace: argocd
-    - name: Wait for the ArgoCD server to be ready
-      kubernetes.core.k8s_info:
-        kind: Pod
-        namespace: argocd
-        label_selectors:
-          - app.kubernetes.io/name=argocd-server
-      register: argocd_pods
-      until: argocd_pods.resources[0].status.phase == "Running"
-      retries: 10
-      delay: 20
+    - name: Install Argo CD using kubectl
+      shell: kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+      register: argocd_install_result
+      changed_when: false
+
+    - name: Print installation result
+      debug:
+        var: argocd_install_result.stdout_lines
+        
     - name: Get ArgoCD initial admin password
       shell: |
         kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
