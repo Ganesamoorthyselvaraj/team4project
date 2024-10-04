@@ -18,7 +18,7 @@ resource "aws_instance" "k8s_master" {
     volume_size = 20 # Set disk size to 20 GB
   }
   tags = {
-    Name = "my-project-k8s-master"
+    Name = "team4-k8s-master"
   }
   user_data = <<-EOF
               #!/bin/bash
@@ -39,7 +39,7 @@ resource "aws_instance" "k8s_worker" {
     volume_size = 20 # Set disk size to 20 GB
   }
   tags = {
-    Name = "my-project-k8s-worker-${count.index + 1}"
+    Name = "team4-k8s-worker-${count.index + 1}"
   }
 }
 # Output the public IPs and names of the Kubernetes instances
