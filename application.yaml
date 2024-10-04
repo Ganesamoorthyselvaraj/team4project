@@ -9,10 +9,10 @@ spec:
   source:
     repoURL: https://github.com/Ganesamoorthyselvaraj/team4helm.git
     targetRevision: main
-    path: dev
+    path: .
   destination: 
     server: https://kubernetes.default.svc
-    namespace: springbootv2
+    namespace: springbootmongo
 
   syncPolicy:
     syncOptions:
