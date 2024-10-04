@@ -1,23 +1,33 @@
----
-- name: Install Argo CD on Kubernetes master
-  hosts: master
+- hosts: master
   become: yes
-
   tasks:
+    - name: Update APT package index
+      apt:
+        update_cache: yes
+    - name: Install Python Kubernetes module
+      apt:
+        name: python3-kubernetes
+        state: present
     - name: Create the ArgoCD namespace
       kubernetes.core.k8s:
         api_version: v1
         kind: Namespace
         name: argocd
-    - name: Install Argo CD using kubectl
-      shell: kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-      register: argocd_install_result
-      changed_when: false
-
-    - name: Print installation result
-      debug:
-        var: argocd_install_result.stdout_lines
-        
+    - name: Apply ArgoCD manifests from the official repository
+      kubernetes.core.k8s:
+        state: present
+        src: https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+        namespace: argocd
+    - name: Wait for the ArgoCD server to be ready
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: argocd
+        label_selectors:
+          - app.kubernetes.io/name=argocd-server
+      register: argocd_pods
+      until: argocd_pods.resources | length > 0 and argocd_pods.resources[0].status.phase == "Running"
+      retries: 3
+      delay: 20
     - name: Get ArgoCD initial admin password
       shell: |
         kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
@@ -25,3 +35,26 @@
     - name: Display the ArgoCD admin password
       debug:
         msg: "The ArgoCD admin password is {{ admin_password.stdout }}"
+    - name: Change ArgoCD service type to NodePort
+      kubernetes.core.k8s:
+        name: argocd-server
+        namespace: argocd
+        state: present
+        kind: Service
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: argocd-server
+            namespace: argocd
+          spec:
+            type: NodePort
+            ports:
+              - port: 80
+                targetPort: 8080
+                nodePort: 30007
+            selector:
+              app.kubernetes.io/name: argocd-server
+    - name: Display the Kubernetes master node's public IP
+      debug:
+        msg: "The public IP of the master node is {{ ansible_host }}"
