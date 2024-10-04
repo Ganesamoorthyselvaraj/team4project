@@ -1,0 +1,19 @@
+- name: Deploy to ArgoCD application
+  hosts: master
+  become: yes
+  tasks:
+    - name: Copy YAML file to Kubernetes server
+      copy:
+        src: application.yaml
+        dest: /tmp/application.yaml
+    - name: Apply the YAML file using kubectl
+      command: kubectl apply -f /tmp/application.yaml
+      args:
+        chdir: /tmp
+      register: kubectl_output
+    - name: Display kubectl output
+      debug:
+        var: kubectl_output.stdout
+    - name: Display kubectl stderr if any
+      debug:
+        var: kubectl_output.stderr
