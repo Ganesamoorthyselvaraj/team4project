@@ -4,6 +4,11 @@
   become: yes
 
   tasks:
+    - name: Create the ArgoCD namespace
+      kubernetes.core.k8s:
+        api_version: v1
+        kind: Namespace
+        name: argocd
     - name: Install Argo CD using kubectl
       shell: kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
       register: argocd_install_result
