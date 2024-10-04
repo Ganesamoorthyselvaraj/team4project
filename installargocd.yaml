@@ -1,1 +1,28 @@
+---
+- name: Install ArgoCD
+  hosts: master
+  tasks:
+    - name: Create ArgoCD namespace
+      kubernetes.core.k8s:
+        api_version: v1
+        kind: Namespace
+        name: argocd
 
+    - name: Install ArgoCD
+      kubernetes.core.k8s:
+        api_version: v1
+        kind: Pod
+        namespace: argocd
+        definition:
+          metadata:
+            name: argocd-install
+          spec:
+            containers:
+              - name: kubectl
+                image: bitnami/kubectl:latest
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+            restartPolicy: Never
