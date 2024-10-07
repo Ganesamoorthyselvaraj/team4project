@@ -4,7 +4,7 @@ metadata:
   name: myapp-argo-application
   namespace: argocd
   annotations:
-    argocd-image-updater.argoproj.io/image-list: "springbootmongo=sganesamoorthy/project-service:<tag>"
+    argocd-image-updater.argoproj.io/image-list: "springbootmongo=sganesamoorthy/project-service"
     argocd-image-updater.argoproj.io/update-strategy: "v1"
     argocd-image-updater.argoproj.io/docker-registry: "my-dockerhub-secret" # Add this linespec:
 spec:
