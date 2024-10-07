@@ -1,6 +1,7 @@
 ---
 - name: Install NGINX Ingress Controller
   hosts: master
+  become: yes
   tasks:
     - name: Create namespace for Ingress Controller
       shell: kubectl create namespace ingress-nginx
