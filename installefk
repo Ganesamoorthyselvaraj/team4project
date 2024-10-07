@@ -1,6 +1,6 @@
 ---
 - name: Setup EFK Monitoring Stack
-  hosts: localhost
+  hosts: master
   tasks:
 
     - name: Create Namespace
