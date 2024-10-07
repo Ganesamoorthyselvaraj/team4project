@@ -1,6 +1,7 @@
 ---
 - name: Setup EFK Monitoring Stack
   hosts: master
+  become: yes
   tasks:
 
     - name: Create Namespace
