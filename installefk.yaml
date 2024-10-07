@@ -47,3 +47,19 @@
       kubernetes.core.k8s:
         state: present
         definition: "{{ lookup('file', './fluentd-config-map.yaml') }}"
+    - name: Fetch the current kibana-kibana service YAML
+      shell: kubectl get svc kibana-kibana -n efk-monitoring -o yaml > /tmp/kibana-kibana-svc.yaml
+      
+    - name: Update service type to NodePort
+      shell: |
+        sed -i 's/type: ClusterIP/type: NodePort/' /tmp/kibana-kibana-svc.yaml
+        sed -i '/nodePort: 31234/!s/targetPort: 5601/&\n  nodePort: 30010/' /tmp/kibana-kibana-svc.yaml
+
+    - name: Apply the updated service YAML
+      shell: kubectl apply -f /tmp/kibana-kibana-svc.yaml
+
+    - name: Verify the updated service
+      shell: kubectl get svc -n efk-monitoring kibana-kibana
+      register: updated_svc
+
+    - debug: var=ingress_pods.stdout_lines    
