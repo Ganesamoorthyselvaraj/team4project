@@ -1,0 +1,55 @@
+---
+- name: Setup EFK Monitoring Stack
+  hosts: master
+  tasks:
+
+    - name: Create Namespace
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: efk-monitoring
+
+    - name: Add Elastic Helm Repository
+      command: helm repo add elastic https://helm.elastic.co
+
+    - name: Update Helm Repositories
+      command: helm repo update
+
+    - name: Install Elasticsearch
+      command: helm install elasticsearch elastic/elasticsearch --version 7.17.3 -n efk-monitoring --set persistence.enabled=false,replicas=1
+
+    - name: Wait for Elasticsearch to be up
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Pod
+        namespace: efk-monitoring
+      register: es_pods
+      until: es_pods.resources | selectattr('status.phase', 'equalto', 'Running') | list | length == 1
+      retries: 10
+      delay: 30
+
+    - name: Install Kibana
+      command: helm install kibana elastic/kibana --version 7.17.3 -n efk-monitoring
+
+    - name: Wait for Kibana to be up
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Pod
+        namespace: efk-monitoring
+      register: kibana_pods
+      until: kibana_pods.resources | selectattr('status.phase', 'equalto', 'Running') | list | length == 1
+      retries: 10
+      delay: 30
+
+    - name: Apply Fluentd RBAC
+      kubernetes.core.k8s:
+        state: present
+        definition: "{{ lookup('file', './fluentd-rbac.yaml') }}"
+
+    - name: Apply Fluentd Configuration
+      kubernetes.core.k8s:
+        state: present
+        definition: "{{ lookup('file', './fluentd-config-map.yaml') }}"
