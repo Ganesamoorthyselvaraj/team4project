@@ -1,5 +1,5 @@
 ---
-- name: Add nodeport instead of clusterIP
+- name: Setup EFK Monitoring Stack
   hosts: master
   become: yes
   tasks:
@@ -9,7 +9,10 @@
     - name: Update service type to NodePort
       shell: |
         sed -i 's/type: ClusterIP/type: NodePort/' /tmp/kibana-kibana-svc.yaml
-        sed -i '/nodePort: 31234/!s/targetPort: 5601/&\n  nodePort: 30010/' /tmp/kibana-kibana-svc.yaml
+        sed -i '/nodePort: 30010/!s/targetPort: 5601/&\n  nodePort: 30010/' /tmp/kibana-kibana-svc.yaml
+
+    - name: Delete the existing kibana-kibana service
+      shell: kubectl delete svc kibana-kibana -n efk-monitoring
 
     - name: Apply the updated service YAML
       shell: kubectl apply -f /tmp/kibana-kibana-svc.yaml
@@ -18,3 +21,4 @@
       shell: kubectl get svc -n efk-monitoring kibana-kibana
       register: updated_svc
 
+    - debug: var=updated_svc.stdout_lines
