@@ -8,7 +8,7 @@
       ignore_errors: yes
 
     - name: Apply NGINX Ingress Controller manifest
-      shell: kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v2.3.0/deploy/static/provider/cloud/deploy.yaml -n ingress-nginx
+      shell: kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v2.3.0/deploy/static/provider/baremetal/deploy.yaml -n ingress-nginx
       ignore_errors: yes
 
     - name: Verify Ingress Controller pods are running
