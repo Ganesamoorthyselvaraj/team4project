@@ -9,7 +9,7 @@
     - name: Update service type to NodePort
       shell: |
         sed -i 's/type: ClusterIP/type: NodePort/' /tmp/kibana-kibana-svc.yaml
-        sed -i '/nodePort: 30010/!s/targetPort: 5601/&\n  nodePort: 30010/' /tmp/kibana-kibana-svc.yaml
+        sed -i '/targetPort: 5601/a \ \ \ \ nodePort: 30010' /tmp/kibana-kibana-svc.yaml
 
     - name: Delete the existing kibana-kibana service
       shell: kubectl delete svc kibana-kibana -n efk-monitoring
