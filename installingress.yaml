@@ -8,33 +8,27 @@
       ignore_errors: yes
 
     - name: Apply NGINX Ingress Controller manifest
-      shell: kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v2.3.0/deploy/static/provider/baremetal/deploy.yaml   
+      shell: kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
       ignore_errors: yes
 
     - name: Verify Ingress Controller pods are running
       shell: kubectl get pods -n ingress-nginx
       register: ingress_pods
-   
-    - name: Fetch the current Ingress Controller service YAML
-      shell: kubectl get svc my-ingress-controller-ingress-nginx-controller -n ingress-nginx -o yaml
-      register: svc_yaml
 
-    - name: Save the current service YAML to a file
-      copy:
-        content: "{{ svc_yaml.stdout }}"
-        dest: ingress-controller-svc.yaml
+    - name: Fetch the current Ingress Controller service YAML
+      shell: kubectl get svc -n ingress-nginx -o yaml > /tmp/ingress-controller-svc.yaml
 
     - name: Update service type to NodePort
       shell: |
-        sed -i 's/type: LoadBalancer/type: NodePort/' ingress-controller-svc.yaml
-        sed -i '/nodePort: 31234/!s/targetPort: 80/&\n  nodePort: 31234/' ingress-controller-svc.yaml
-        sed -i '/nodePort: 31235/!s/targetPort: 443/&\n  nodePort: 31235/' ingress-controller-svc.yaml
+        sed -i 's/type: LoadBalancer/type: NodePort/' /tmp/ingress-controller-svc.yaml
+        sed -i '/nodePort: 31234/!s/targetPort: 80/&\n  nodePort: 31234/' /tmp/ingress-controller-svc.yaml
+        sed -i '/nodePort: 31235/!s/targetPort: 443/&\n  nodePort: 31235/' /tmp/ingress-controller-svc.yaml
 
     - name: Apply the updated service YAML
-      shell: kubectl apply -f ingress-controller-svc.yaml
+      shell: kubectl apply -f /tmp/ingress-controller-svc.yaml
 
     - name: Verify the updated service
-      shell: kubectl get svc my-ingress-controller-ingress-nginx-controller -n ingress-nginx
+      shell: kubectl get svc -n ingress-nginx
       register: updated_svc
 
-    - debug: var=ingress_pods.stdout_lines 
+    - debug: var=ingress_pods.stdout_lines
