@@ -3,7 +3,6 @@
   hosts: master
   become: yes
   tasks:
-    tasks:
     - name: Create Namespace for Argo CD
       shell: kubectl create namespace argocd
       ignore_errors: yes
