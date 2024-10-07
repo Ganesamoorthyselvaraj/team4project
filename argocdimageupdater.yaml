@@ -1,0 +1,23 @@
+---
+- name: Install Argo CD Image Updater
+  hosts: master
+  become: yes
+  tasks:
+    - name: Add Argo Helm Repository
+      command: helm repo add argo https://argoproj.github.io/argo-helm
+
+    - name: Update Helm Repositories
+      command: helm repo update
+
+    - name: Create Namespace for Argo CD
+      shell: kubectl create namespace argocd
+      ignore_errors: yes
+
+    - name: Install Argo CD Image Updater
+      command: helm install argocd-image-updater argo/argocd-image-updater -n argocd --create-namespace
+
+    - name: Verify Argo CD Image Updater Installation
+      shell: kubectl get pods -n argocd
+      register: image_updater_pods
+
+    - debug: var=image_updater_pods.stdout_lines
