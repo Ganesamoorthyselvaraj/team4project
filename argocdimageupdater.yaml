@@ -10,6 +10,14 @@
     - name: Apply Argo CD Image Updater Manifest
       shell: kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj-labs/argocd-image-updater/stable/manifests/install.yaml
 
+    - name: Create Docker Registry Secret
+      shell: |
+        kubectl create secret docker-registry my-dockerhub-secret \
+          --docker-server=https://index.docker.io/v1/ \
+          --docker-username=sganesamoorthy \
+          --docker-password=dckr_pat_toxe1_mOiJwug7Zvq4kRIWkfRWM \
+          --docker-email=s.ganesamoorthy@gmail.com \
+          -n argocd
     - name: Verify Argo CD Image Updater Installation
       shell: kubectl get pods -n argocd
       register: image_updater_pods
