@@ -3,18 +3,13 @@
   hosts: master
   become: yes
   tasks:
-    - name: Add Argo Helm Repository
-      command: helm repo add argo https://argoproj.github.io/argo-helm
-
-    - name: Update Helm Repositories
-      command: helm repo update
-
+    tasks:
     - name: Create Namespace for Argo CD
       shell: kubectl create namespace argocd
       ignore_errors: yes
 
-    - name: Install Argo CD Image Updater
-      command: helm install argocd-image-updater argo/argocd-image-updater -n argocd --create-namespace
+    - name: Apply Argo CD Image Updater Manifest
+      shell: kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj-labs/argocd-image-updater/stable/manifests/install.yaml
 
     - name: Verify Argo CD Image Updater Installation
       shell: kubectl get pods -n argocd
